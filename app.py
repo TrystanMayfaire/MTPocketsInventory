@@ -13,10 +13,16 @@ from constants import ERA_PERIOD_OPTIONS, CONDITION_OPTIONS
 
 app = dash.Dash(
     __name__,
-    external_stylesheets=[dbc.themes.FLATLY],
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True
 )
 app.title = "MT Pockets Theatre Inventory Catalog"
+server = app.server
+
+@server.after_request
+def allow_iframe(response):
+    response.headers["X-Frame-Options"] = "ALLOWALL"
+    return response
 
 
 # --- HELPER FUNCTIONS ---
