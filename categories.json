@@ -1,0 +1,220 @@
+[
+  {
+    "name": "Furniture & Large Set Pieces",
+    "children": [
+      {
+        "name": "Seating",
+        "children": [
+          { "name": "Chairs - Dining & Side" },
+          { "name": "Chairs - Armchairs & Recliners" },
+          { "name": "Chairs - Folding & Stacking" },
+          { "name": "Sofas & Couches" },
+          { "name": "Benches & Stools" }
+        ]
+      },
+      {
+        "name": "Tables & Desks",
+        "children": [
+          { "name": "Dining & Kitchen Tables" },
+          { "name": "Coffee & End Tables" },
+          { "name": "Writing Desks & Secretaries" },
+          { "name": "Vanity & Dressing Tables" }
+        ]
+      },
+      {
+        "name": "Storage & Case Goods",
+        "children": [
+          { "name": "Bookshelves & Etageres" },
+          { "name": "Dressers & Chests of Drawers" },
+          { "name": "Cabinets & Armoires" },
+          { "name": "Trunks & Storage Chests" }
+        ]
+      },
+      {
+        "name": "Beds & Lounges",
+        "children": [
+          { "name": "Bed Frames & Headboards" },
+          { "name": "Daybeds & Chaise Lounges" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Set Dressing & Furnishings",
+    "children": [
+      {
+        "name": "Soft Goods & Textiles",
+        "children": [
+          { "name": "Rugs & Carpets" },
+          { "name": "Curtains, Drapes & Hardware" },
+          { "name": "Pillows & Cushions" },
+          { "name": "Blankets, Quilts & Bedding" },
+          { "name": "Tablecloths & Linens" }
+        ]
+      },
+      {
+        "name": "Wall Decor",
+        "children": [
+          { "name": "Framed Art & Paintings" },
+          { "name": "Mirrors" },
+          { "name": "Clocks (Wall & Mantel)" },
+          { "name": "Tapestries & Wall Hangings" },
+          { "name": "Signs & Plaques" }
+        ]
+      },
+      {
+        "name": "Practical Lighting",
+        "children": [
+          { "name": "Floor Lamps" },
+          { "name": "Table & Desk Lamps" },
+          { "name": "Sconces & Wall Lights" },
+          { "name": "Chandeliers & Hanging Lights" },
+          { "name": "Lanterns & Candles" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Hand Props",
+    "children": [
+      {
+        "name": "Paper Goods & Books",
+        "children": [
+          { "name": "Letters, Scrolls & Documents" },
+          { "name": "Bound Books & Journals" },
+          { "name": "Newspapers & Periodicals" },
+          { "name": "Maps & Blueprints" }
+        ]
+      },
+      {
+        "name": "Domestic & Kitchenware",
+        "children": [
+          { "name": "Dishes & Plates" },
+          { "name": "Glasses, Cups & Mugs" },
+          { "name": "Cutlery & Serving Utensils" },
+          { "name": "Pots, Pans & Cookware" },
+          { "name": "Trays & Pitchers" }
+        ]
+      },
+      {
+        "name": "Consumables & Food Replicas",
+        "children": [
+          { "name": "Stage Food Props" },
+          { "name": "Bottles & Canned Goods" },
+          { "name": "Pipes, Cigarettes & Matches" }
+        ]
+      },
+      {
+        "name": "Personal Accessories",
+        "children": [
+          { "name": "Handbags, Purses & Briefcases" },
+          { "name": "Trunks, Suitcases & Luggage" },
+          { "name": "Umbrellas & Walking Canes" },
+          { "name": "Eyeglasses & Monocles" },
+          { "name": "Pocket Watches & Jewelry" }
+        ]
+      },
+      {
+        "name": "Weaponry & Martial",
+        "children": [
+          { "name": "Edged Weapons (Swords, Daggers)" },
+          { "name": "Firearms (Prop & Non-Firing)" },
+          { "name": "Holsters, Belts & Scabbards" },
+          { "name": "Armor & Shields" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Costumes & Wardrobe",
+    "children": [
+      {
+        "name": "Outerwear & Jackets",
+        "children": [
+          { "name": "Coats & Capes" },
+          { "name": "Suits, Vests & Blazers" },
+          { "name": "Jackets & Sweaters" }
+        ]
+      },
+      {
+        "name": "Tops & Shirts",
+        "children": [
+          { "name": "Period Shirts & Blouses" },
+          { "name": "Casual Tops & T-Shirts" },
+          { "name": "Tunics & Vests" }
+        ]
+      },
+      {
+        "name": "Bottoms & Skirts",
+        "children": [
+          { "name": "Trousers & Pants" },
+          { "name": "Skirts & Petticoats" },
+          { "name": "Breeches & Shorts" }
+        ]
+      },
+      {
+        "name": "Dresses, Gowns & Robes",
+        "children": [
+          { "name": "Ballgowns & Formal Wear" },
+          { "name": "Day Dresses & Housewear" },
+          { "name": "Robes & Vestments" }
+        ]
+      },
+      {
+        "name": "Footwear",
+        "children": [
+          { "name": "Boots (Period & Riding)" },
+          { "name": "Dress Shoes & Heels" },
+          { "name": "Slippers & Sandals" }
+        ]
+      },
+      {
+        "name": "Headwear & Accessories",
+        "children": [
+          { "name": "Hats & Caps" },
+          { "name": "Wigs, Hairpieces & Facial Hair" },
+          { "name": "Gloves, Scarves & Ties" },
+          { "name": "Belts, Buckles & Suspenders" }
+        ]
+      },
+      {
+        "name": "Specialty & Fantasy Costumes",
+        "children": [
+          { "name": "Mascot & Creature Suits" },
+          { "name": "Uniforms (Military, Police, Service)" },
+          { "name": "Dancewear & Bodysuits" }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Specialty, FX & Period Tech",
+    "children": [
+      {
+        "name": "Period Technology",
+        "children": [
+          { "name": "Vintage Telephones" },
+          { "name": "Typewriters & Office Machines" },
+          { "name": "Radios & Phonographs" },
+          { "name": "Vintage Cameras & Optics" }
+        ]
+      },
+      {
+        "name": "Musical Instruments",
+        "children": [
+          { "name": "String Instruments" },
+          { "name": "Keyboard & Accordions" },
+          { "name": "Brass & Woodwinds" },
+          { "name": "Percussion" }
+        ]
+      },
+      {
+        "name": "Breakables & Stunt Props",
+        "children": [
+          { "name": "Sugar Glass & Breakable Bottles" },
+          { "name": "Padded & Soft Stunt Items" }
+        ]
+      }
+    ]
+  }
+]

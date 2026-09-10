@@ -1,0 +1,87 @@
+/* MT Pockets Theatre Custom Visual Theme */
+
+:root {
+    --mtp-forest-green: #2E5A3C;
+    --mtp-forest-green-dark: #1F3E28;
+    --mtp-sky-blue: #4B9CD3;
+    --mtp-sky-blue-hover: #3B82B3;
+    --mtp-header-bg: #2E5A3C;
+    --mtp-body-bg: #F4F6F7;
+    --mtp-text-dark: #222222;
+}
+
+body {
+    background-color: var(--mtp-body-bg);
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--mtp-text-dark);
+    margin: 0;
+    padding: 0;
+}
+
+/* Header Banner — Forest Green matching website header */
+.mtp-header {
+    background-color: var(--mtp-forest-green) !important;
+    color: #ffffff !important;
+    border-bottom: 4px solid var(--mtp-sky-blue);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.mtp-header h1 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    letter-spacing: 0.5px;
+}
+
+/* Action Buttons */
+.btn-mtp-primary {
+    background-color: var(--mtp-sky-blue) !important;
+    border-color: var(--mtp-sky-blue) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.btn-mtp-primary:hover {
+    background-color: var(--mtp-sky-blue-hover) !important;
+    border-color: var(--mtp-sky-blue-hover) !important;
+}
+
+/* Modals Styling */
+.modal-header {
+    background-color: var(--mtp-forest-green) !important;
+    color: #ffffff !important;
+    border-bottom: 3px solid var(--mtp-sky-blue) !important;
+}
+
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Cards & Section Containers */
+.card-header {
+    background-color: #ffffff !important;
+    border-bottom: 2px solid #e9ecef !important;
+}
+
+/* Ag-Grid Styling for Clean iFrame Embedding */
+.ag-theme-alpine {
+    --ag-grid-size: 4px;
+    --ag-list-item-height: 38px;
+    --ag-header-background-color: #f1f3f5;
+    --ag-selected-row-background-color: rgba(75, 156, 211, 0.15);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* Mobile & iFrame Responsiveness */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .btn-responsive {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
