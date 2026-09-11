@@ -76,17 +76,14 @@ def build_full_category_path(category_id: int):
 
 column_defs = [
     {"field": "id", "headerName": "ID", "width": 70, "sortable": True, "filter": True},
-    {"field": "name", "headerName": "Item Name", "flex": 2, "sortable": True, "filter": True},
-    {"field": "category_path", "headerName": "Category Path", "flex": 2, "sortable": True, "filter": True},
+    {"field": "name", "headerName": "Item Name", "minwidth": 180, "flex": 2,
+              "sortable": True, "filter": True, "hide": False},
+    {"field": "category_path", "headerName": "Category Path", "flex": 2, "minwidth": 160,
+              "sortable": True, "filter": True},
     {"field": "storage_location", "headerName": "Location", "flex": 1, "sortable": True, "filter": True},
     {"field": "era_period", "headerName": "Era / Period", "width": 150, "sortable": True, "filter": True},
     {"field": "condition", "headerName": "Condition", "width": 120, "sortable": True, "filter": True},
-    {
-        "field": "status",
-        "headerName": "Status",
-        "width": 130,
-        "sortable": True,
-        "filter": True,
+    {"field": "status", "headerName": "Status", "width": 130, "sortable": True, "filter": True,
         "cellStyle": {
             "styleConditions": [
                 {"condition": "params.value == 'Available'", "style": {"color": "#28a745", "fontWeight": "bold"}},
@@ -98,8 +95,33 @@ column_defs = [
     {"field": "created_on_str", "headerName": "Date Added", "width": 120, "sortable": True, "filter": True}
 ]
 
-
 # --- APP LAYOUT ---
+
+column_picker = dbc.Accordion(
+    [
+        dbc.AccordionItem(
+            dbc.Checklist(
+                id="column-toggle-checklist",
+                options=[
+                    {"label": "ID", "value": "id"},
+                    {"label": "Category Path", "value": "category_path"},
+                    {"label": "Location", "value": "storage_location"},
+                    {"label": "Era / Period", "value": "era_period"},
+                    {"label": "Condition", "value": "condition"},
+                    {"label": "Status", "value": "status"},
+                    {"label": "Date Added", "value": "created_on_str"},
+                ],
+                # Default checked columns:
+                value=["id", "category_path", "location", "condition", "status"],
+                inline=True,
+                switch=True,
+            ),
+            title="⚙️ Customize Visible Columns",
+        )
+    ],
+    start_collapsed=True,
+    className="mb-3",
+)
 
 app.layout = dbc.Container([
     dcc.Store(id="user-auth-store", data={"logged_in": False, "username": ""}),
@@ -163,6 +185,7 @@ app.layout = dbc.Container([
                     ], className="d-flex align-items-center")
                 ]),
                 dbc.CardBody([
+                    column_picker,
                     dag.AgGrid(
                         id="inventory-grid",
                         columnDefs=column_defs,
@@ -823,6 +846,20 @@ def handle_deletion_flow(request_clicks, cancel_clicks, confirm_clicks, active_p
         return False, False, refresh_count + 1
 
     return False, True, refresh_count
+
+@app.callback(
+    Output("inventory-grid", "columnDefs"),
+    Input("column-toggle-checklist", "value")
+)
+def update_column_visibility(visible_columns):
+    updated_defs = []
+    for col in column_defs:
+        col_copy = col.copy()
+        # Item Name stays always visible; other columns toggle based on checklist
+        if col_copy["field"] != "name":
+            col_copy["hide"] = col_copy["field"] not in visible_columns
+        updated_defs.append(col_copy)
+    return updated_defs
 
 
 if __name__ == "__main__":
