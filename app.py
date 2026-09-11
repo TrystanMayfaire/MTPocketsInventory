@@ -1,4 +1,3 @@
-import base64
 from datetime import datetime, date
 import dash
 from dash import html, dcc, Input, Output, State, callback, callback_context, no_update
