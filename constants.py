@@ -32,3 +32,9 @@ CONDITION_OPTIONS = [
     {"label": "Needs Repair / Maintenance", "value": "Needs Repair"},
     {"label": "Damaged / Display Only", "value": "Damaged"}
 ]
+
+# User Level Options
+USER_LEVEL_OPTIONS = [
+    {"label": "Admin", "value": "admin"},
+    {"label": "User", "value": "user"}
+]

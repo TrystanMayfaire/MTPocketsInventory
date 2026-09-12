@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, date
 import dash
 from dash import html, dcc, Input, Output, State, callback, callback_context, no_update
@@ -5,10 +6,12 @@ import dash_bootstrap_components as dbc
 import dash_ag_grid as dag
 from sqlalchemy import select, or_
 from sqlalchemy.orm import aliased
+import secrets
 
 # Import models, ENGINE, and SessionLocal from your database.py
-from database import SessionLocal, Category, Prop, PropImage, PropCheckout, User
-from constants import ERA_PERIOD_OPTIONS, CONDITION_OPTIONS
+from database import SessionLocal, Category, Prop, PropImage, PropCheckout, User, InviteCode
+from constants import ERA_PERIOD_OPTIONS, CONDITION_OPTIONS, USER_LEVEL_OPTIONS
+
 
 app = dash.Dash(
     __name__,
@@ -25,6 +28,39 @@ def allow_iframe(response):
 
 
 # --- HELPER FUNCTIONS ---
+EMAIL_REGEX = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+USERNAME_REGEX = r"^[a-zA-Z0-9_.-]{3,30}$"
+
+def validate_username(username: str) -> str | None:
+    """Validates username length and character constraints."""
+    if not username or not username.strip():
+        return "⚠️ Username is required."
+    clean_un = username.strip()
+    if len(clean_un) < 3 or len(clean_un) > 30:
+        return "⚠️ Must be between 3 and 30 characters."
+    if not re.match(USERNAME_REGEX, clean_un):
+        return "⚠️ Only letters, numbers, underscores, hyphens, and dots allowed."
+    return None
+
+def validate_password(password: str, username: str = "") -> str | None:
+    """Validates password strength rules."""
+    if not password:
+        return "⚠️ Password is required."
+    if len(password) < 8:
+        return "⚠️ Password must be at least 8 characters long."
+    if len(password) > 128:
+        return "⚠️ Password cannot exceed 128 characters."
+    if not re.search(r"[A-Z]", password):
+        return "⚠️ Must contain at least one uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return "⚠️ Must contain at least one lowercase letter."
+    if not re.search(r"\d", password):
+        return "⚠️ Must contain at least one number."
+    if not re.search(r"[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]", password):
+        return "⚠️ Must contain at least one special character."
+    if username and username.strip().lower() in password.lower():
+        return "⚠️ Password cannot contain your username."
+    return None
 
 def get_top_categories():
     """Fetch all top-level categories (parent_id IS NULL)."""
@@ -127,6 +163,11 @@ app.layout = dbc.Container([
     dcc.Store(id="refresh-trigger-store", data=0),
     dcc.Store(id="active-prop-id-store", data=None),
 
+    dbc.Button("+",
+               id="open-add-modal-btn",
+               className="fab-add-btn fab-hidden shadow-lg",
+               n_clicks=0),
+
     # Header
     dbc.Row([
         dbc.Col([
@@ -138,7 +179,7 @@ app.layout = dbc.Container([
                 html.Div([
                     html.Span(id="user-greeting-badge", className="me-3 text-light fw-bold"),
                     dbc.Button("User Login", id="toggle-login-btn", color="warning", outline=True, size="sm", className="me-2"),
-                    dbc.Button("+ Add New Item", id="open-add-modal-btn", className="btn-mtp-primary fw-bold px-3")
+                    dbc.Button("Admin Panel", id="toggle-admin-btn", className="btn-mtp-secondary fw-bold px-3", style={'display': 'none'}),
                 ], className="d-flex align-items-center mt-2 mt-md-0")
             ], className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between")
         ])
@@ -210,7 +251,11 @@ app.layout = dbc.Container([
             dbc.Input(id="login-username-input", type="text", placeholder="Enter username...", className="mb-3"),
             dbc.Label("Password"),
             dbc.Input(id="login-password-input", type="password", placeholder="Enter password...", className="mb-3"),
-            html.Div(id="login-error-msg", className="text-danger small")
+            html.Div(id="login-error-msg", className="text-danger small"),
+            html.Div([
+            "Have an invite code? ",
+            html.A("Sign Up Here", id="open-signup-modal-btn", href="#", className="text-primary text-decoration-underline fw-bold")
+        ], className="small text-center mt-3")
         ]),
         dbc.ModalFooter([
             dbc.Button("Cancel", id="close-login-modal-btn", color="secondary", outline=True),
@@ -362,7 +407,87 @@ app.layout = dbc.Container([
             dbc.Button("Cancel / Keep Item", id="cancel-delete-btn", color="secondary", outline=True),
             dbc.Button("Yes, Permanently Delete", id="confirm-delete-btn", color="danger")
         ])
-    ], id="delete-confirm-modal", is_open=False)
+    ], id="delete-confirm-modal", is_open=False),
+
+    #Modal 5: Admin Panel
+    dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("Admin Panel")),
+        dbc.ModalBody([
+            html.Div([
+                html.Hr(),
+                html.H6("🔑 Admin: Generate Staff Invite Code", className="fw-bold text-primary mb-3"),
+                dbc.Row([
+                    dbc.Col([
+                        html.Div("Recipient Email", className="fw-bold small mb-1"),
+                        dbc.Input(id="invite-email-input", type="email", placeholder="email@example.com", size="sm")
+                    ], md=5),
+                    dbc.Col([
+                        html.Div("Assigned Role", className="fw-bold small mb-1"),
+                        dcc.Dropdown(
+                            id="invite-role-dropdown",
+                            options=[
+                                {"label": "Staff / Member", "value": "staff"},
+                                {"label": "Administrator", "value": "admin"}
+                            ],
+                            value="staff",
+                            clearable=False,
+                            className="sm"
+                        )
+                    ], md=4),
+                    dbc.Col([
+                        html.Div(" Action", className="fw-bold small mb-1 text-white"), # Alignment spacer
+                        dbc.Button("Generate Code", id="generate-code-btn", color="primary", size="sm", className="w-100")
+                    ], md=3),
+                ], className="g-2 mb-2 align-items-end"),
+                html.Div(id="generated-code-output", className="small fw-bold text-success mt-2")
+            ], id="admin-invite-section")
+        ]),
+        dbc.ModalFooter([
+            dbc.Button("Cancel", id="close-admin-modal-btn", color="secondary", outline=True),
+        ])
+    ], id="admin-modal", is_open=False),
+
+    # Modal 6 - User Registration / Sign Up
+    dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle("User Registration")),
+        dbc.ModalBody([
+            dbc.Label("Invite Code", className="fw-bold"),
+            dbc.Input(id="signup-code-input", type="text", placeholder="XXXX-XXXX", className="mb-3"),
+            html.Div(id="signup-code-error-msg", className="small mt-2"),
+
+            dbc.Label("Choose Username", className="fw-bold"),
+            dbc.Input(id="signup-username-input", type="text", placeholder="Choose username...", className="mb-3"),
+            html.Div("3–30 characters (letters, numbers, '.', '_', '-')", className="text-muted extra-small mt-1"),
+            html.Div(id="signup-username-error-msg", className="small mt-2"),
+
+            dbc.Label("Choose Password", className="fw-bold"),
+            dbc.Input(id="signup-password-input", type="password", placeholder="Choose password...", className="mb-3"),
+            html.Div("8+ characters with uppercase, lowercase, number, & special character.", className="text-muted extra-small mt-1"),
+            html.Div(id="signup-password-error-msg", className="small mt-2"),
+
+            dbc.Label("Verify Password", className="fw-bold"),
+            dbc.Input(id="signup-password-input2", type="password", placeholder="Retype password...", className="mb-3"),
+            html.Div(id="signup-password2-error-msg", className="small mt-2"),
+
+
+            dbc.Label("Name", className="fw-bold"),
+            dbc.Input(id="signup-name-input", type="text", placeholder="FirstName LastName", className="mb-3"),
+            html.Div(id="signup-name-error-msg", className="small mt-2"),
+
+            dbc.Label("Email Address", className="fw-bold"),
+            dbc.Input(id="signup-email-input", type="email", placeholder="your.email@example.com", className="mb-3"),
+            html.Div(id="signup-email-error-msg", className="small mt-2"),
+
+            dbc.Label("Verify Email Address", className="fw-bold"),
+            dbc.Input(id="signup-email-input2", type="email", placeholder="your.email@example.com", className="mb-3"),
+            html.Div(id="signup-email2-error-msg", className="small mt-2"),
+
+        ]),
+        dbc.ModalFooter([
+            dbc.Button("Cancel", id="close-signup-modal-btn", color="secondary", outline=True),
+            dbc.Button("Register", id="submit-signup-btn", color="success")
+        ])
+    ], id="signup-modal", is_open=False),
 
 ], fluid=True, className="p-2 p-md-4")
 
@@ -502,6 +627,8 @@ def update_modal_leaf_categories(selected_subcat_id):
     Output("login-error-msg", "children"),
     Output("toggle-login-btn", "children"),
     Output("user-greeting-badge", "children"),
+    Output('toggle-admin-btn', 'style'),
+    Output("open-add-modal-btn", "className"),
     Input("toggle-login-btn", "n_clicks"),
     Input("submit-login-btn", "n_clicks"),
     Input("close-login-modal-btn", "n_clicks"),
@@ -513,41 +640,48 @@ def update_modal_leaf_categories(selected_subcat_id):
 def handle_user_login(toggle_clicks, submit_clicks, close_clicks, username, password, auth_data):
     ctx = callback_context
     if not ctx.triggered:
-        return False, auth_data, "", "User Login", ""
+        return False, auth_data, "", "User Login", "", {"display": "none"}, "fab-add-btn fab-hidden shadow-lg"
 
     btn_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
     if btn_id == "toggle-login-btn":
         if auth_data.get("logged_in"):
-            return False, {"logged_in": False, "username": ""}, "", "User Login", ""
-        return True, auth_data, "", "User Login", ""
+            return False, {"logged_in": False, "username": ""}, "", "User Login", "", {"display": "none"}, "fab-add-btn fab-hidden shadow-lg"
+        elif auth_data.get("role") == 'admin':
+            return True, auth_data, "", "User Login", "", {"display": "block"}, "fab-add-btn shadow-lg"
+        return True, auth_data, "", "User Login", "", {"display": "none"}, "fab-add-btn shadow-lg"
 
     if btn_id == "submit-login-btn":
         if not username or not password:
-            return True, auth_data, "Please enter both username and password.", "User Login", ""
+            return True, auth_data, "Please enter both username and password.", "User Login", "", {"display": "none"}, "fab-add-btn fab-hidden shadow-lg"
 
         session = SessionLocal()
         try:
             user = session.scalars(select(User).where(User.username == username.strip())).first()
             if user and user.check_password(password):
-                new_auth = {"logged_in": True, "username": user.username, "full_name": user.full_name or user.username}
-                return False, new_auth, "", "Sign Out", f"Logged in: {user.full_name or user.username}"
-            return True, auth_data, "Invalid username or password.", "User Login", ""
+                new_auth = {"logged_in": True,
+                            "username": user.username,
+                            "full_name": user.full_name or user.username,
+                            "role": user.role}
+                role = str(new_auth["role"]).lower()
+                if  role == "admin":
+                    return False, new_auth, "", "Sign Out", f"Logged in: {user.full_name or user.username}", {"display": "inline-block"}, "fab-add-btn shadow-lg"
+                return False, new_auth, "", "Sign Out", f"Logged in: {user.full_name or user.username}", {"display": "none"}, "fab-add-btn shadow-lg"
+            return True, auth_data, "Invalid username or password.", "User Login", "", {"display": "none"}, "fab-add-btn fab-hidden shadow-lg"
         finally:
             session.close()
 
     if btn_id == "close-login-modal-btn":
         btn_label = "Sign Out" if auth_data.get("logged_in") else "User Login"
         greeting = f"Logged in: {auth_data.get('full_name')}" if auth_data.get("logged_in") else ""
-        return False, auth_data, "", btn_label, greeting
+        return False, auth_data, "", btn_label, greeting, {"display": "none"}, "fab-add-btn shadow-lg"
 
-    return False, auth_data, "", "User Login", ""
+    return False, auth_data, "", "User Login", "", {"display": "none"}, "fab-add-btn fab-hidden shadow-lg"
 
 
 # 5. Add Item Modal Toggle
 @callback(
     Output("add-item-modal", "is_open"),
-    Output("login-modal", "is_open", allow_duplicate=True),
     Input("open-add-modal-btn", "n_clicks"),
     Input("close-add-modal-btn", "n_clicks"),
     State("user-auth-store", "data"),
@@ -556,16 +690,15 @@ def handle_user_login(toggle_clicks, submit_clicks, close_clicks, username, pass
 def toggle_add_item_modal(open_clicks, close_clicks, auth_data):
     ctx = callback_context
     if not ctx.triggered:
-        return False, False
+        return False
 
     btn_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
     if btn_id == "open-add-modal-btn":
         if auth_data.get("logged_in"):
-            return True, False
-        return False, True  # Open login modal if not authenticated
-
-    return False, False
+            return True
+        return False
+    return False
 
 
 # Image Preview
@@ -860,6 +993,267 @@ def update_column_visibility(visible_columns):
         updated_defs.append(col_copy)
     return updated_defs
 
+@callback(
+    Output("admin-modal", "is_open"),
+    Output("generated-code-output", "children"),
+    Input("toggle-admin-btn", "n_clicks"),
+    Input("close-admin-modal-btn", "n_clicks"),
+    Input("generate-code-btn", "n_clicks"),
+    State("invite-email-input", "value"),
+    State("invite-role-dropdown", "value"),
+    State("user-auth-store", "data"),
+    prevent_initial_call=True
+)
+def admin_panel_control(admin_n_clicks, close_admin_n_clicks, gen_code_n_clicks, email, role, auth_data):
+    ctx = callback_context
+    if not ctx.triggered:
+        return False, ""
+
+    btn_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if btn_id == "toggle-admin-btn":
+        return True, ""
+
+    elif btn_id == "close-admin-modal-btn":
+        return False, ""
+
+    elif btn_id == "generate-code-btn":
+
+        if not auth_data.get("logged_in") or not email or auth_data.get("role").lower() != "admin":
+            return True, "⚠️ Please login to an admin account to generate an invite code."
+
+        if not email or not email.strip():
+            return True, "⚠️ Please enter a recipient email address."
+
+        # Logic to create entry in InviteCode table & return generated token string
+        clean_email = email.strip().lower()
+        session = SessionLocal()
+        try:
+            # Check if code already exists for email
+            existing = session.query(InviteCode).filter_by(email=clean_email).first()
+            if existing:
+                status_str = "Used" if existing.is_used else "Active / Unused"
+                return True, f"⚠️  Code already exists for {clean_email}: '{existing.code}' (Used: {status_str})"
+
+            raw_token = secrets.token_hex(4).upper()
+            formatted_code = f"{raw_token[:4]}-{raw_token[4:]}"
+
+            new_invite = InviteCode(
+                code=formatted_code,
+                email=clean_email,
+                assigned_role=role or "user",
+                is_used=False
+            )
+            session.add(new_invite)
+            session.commit()
+
+            return True, f"✅ Code generated for {clean_email}: {formatted_code} (Role: {role})"
+        except Exception as e:
+            session.rollback()
+            return True, f"❌ Error generating code: {str(e)}"
+        finally:
+            session.close()
+    return False, ""
+
+@callback(
+    Output("signup-modal", "is_open"),
+    Output("login-modal", "is_open", allow_duplicate=True),
+    Input("open-signup-modal-btn", "n_clicks"),
+    Input("close-signup-modal-btn", "n_clicks"),
+    State("signup-modal", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_signup_modal(open_clicks, close_clicks, is_open):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return is_open, False
+
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if button_id == "open-signup-modal-btn":
+        return True, False  # Open signup modal, close login modal
+    elif button_id == "close-signup-modal-btn":
+        return False, True # Close signup modal
+
+    return is_open, False
+
+@callback(
+    Output("signup-modal", "is_open", allow_duplicate=True),
+    Output("login-modal", "is_open", allow_duplicate=True),
+    Output("login-username-input", "value"),
+    Output("login-password-input", "value"),
+    Output("signup-code-error-msg", "children"),
+    Output("signup-code-error-msg", "className"),
+    Output("signup-username-error-msg", "children"),
+    Output("signup-username-error-msg", "className"),
+    Output("signup-password-error-msg", "children"),
+    Output("signup-password-error-msg", "className"),
+    Output("signup-password2-error-msg", "children"),
+    Output("signup-password2-error-msg", "className"),
+    Output("signup-name-error-msg", "children"),
+    Output("signup-name-error-msg", "className"),
+    Output("signup-email-error-msg", "children"),
+    Output("signup-email-error-msg", "className"),
+    Output("signup-email2-error-msg", "children"),
+    Output("signup-email2-error-msg", "className"),
+    Input("submit-signup-btn", "n_clicks"),
+    State("signup-code-input", "value"),
+    State("signup-username-input", "value"),
+    State("signup-password-input", "value"),
+    State("signup-password-input2", "value"),
+    State("signup-name-input", "value"),
+    State("signup-email-input", "value"),
+    State("signup-email-input2", "value"),
+    prevent_initial_call=True
+)
+def handle_user_registration(submit_clicks, invite_code, username, password,
+                             password2, full_name, email, email2):
+    if not submit_clicks:
+        return (
+            dash.no_update, dash.no_update, dash.no_update, dash.no_update,
+            "", "small", "", "small", "", "small", "", "small", "", "small", "", "small", "", "small"
+        )
+
+    # Initialize error containers for all 6 fields
+    code_err, un_err, pw_err, pw2_err, name_err, em1_err, em2_err = "", "", "", "", "", "", ""
+    has_error = False
+
+    # 1. Field Required Checks
+    if not invite_code or not invite_code.strip():
+        code_err = "⚠️ Invite code is required."
+        has_error = True
+
+    un_validation = validate_username(username)
+    if un_validation:
+        un_err = un_validation
+        has_error = True
+
+    pw_validation = validate_password(password, username=username)
+    if pw_validation:
+        pw_err = pw_validation
+        has_error = True
+
+    if not password2:
+        pw2_err = "⚠️ Please confirm your password."
+        has_error = True
+    elif password and password != password2:
+        pw2_err = "⚠️ Passwords do not match."
+        has_error = True
+
+    if not full_name or not full_name.strip():
+        name_err = "⚠️ Full name is required."
+        has_error = True
+
+    if not email or not email.strip():
+        em1_err = "⚠️ Email address is required."
+        has_error = True
+
+    if not email2 or not email2.strip():
+        em2_err = "⚠️ Please verify your email address."
+        has_error = True
+
+    # 2. Email Matching Validation
+    clean_email = email.strip().lower() if email else ""
+    clean_email2 = email2.strip().lower() if email2 else ""
+
+    if clean_email and not re.match(EMAIL_REGEX, clean_email):
+        em1_err = "⚠️ Please enter a valid email address (e.g., name@example.com)."
+        has_error = True
+
+    if clean_email and clean_email2 and clean_email != clean_email2:
+        em2_err = "⚠️ Email addresses do not match."
+        has_error = True
+
+    if has_error:
+        err_cls = "small text-danger mt-1"
+        return (
+            True, False, dash.no_update, dash.no_update,
+            code_err, err_cls if code_err else "small",
+            un_err, err_cls if un_err else "small",
+            pw_err, err_cls if pw_err else "small",
+            pw2_err, err_cls if pw2_err else "small",
+            name_err, err_cls if name_err else "small",
+            em1_err, err_cls if em1_err else "small",
+            em2_err, err_cls if em2_err else "small"
+        )
+
+    raw_code = re.sub(r"[^A-Za-z0-9]", "", invite_code).upper()
+
+    # Standard code structure is 8 characters long with hyphen (e.g., XXXX-YYYY)
+    if len(raw_code) == 8:
+        clean_code = f"{raw_code[:4]}-{raw_code[4:]}"
+    else:
+        clean_code = invite_code.strip().upper()
+
+    clean_username = username.strip()
+
+    session = SessionLocal()
+    try:
+        # 3. Database Validation: Invite Code Checks
+        invite = session.scalars(select(InviteCode).where(InviteCode.code == clean_code)).first()
+        if not invite:
+            code_err = "❌ Invalid invite code."
+            has_error = True
+        elif invite.is_used:
+            code_err = "❌ This invite code has already been used."
+            has_error = True
+        elif invite.email.strip().lower() != clean_email:
+            em1_err = "❌ Email address does not match invite record."
+            has_error = True
+
+        # 4. Database Validation: Username Check
+        existing_user = session.scalars(select(User).where(User.username == clean_username)).first()
+        if existing_user:
+            un_err = "⚠️ Username is already taken."
+            has_error = True
+
+        existing_email = session.scalars(select(User).where(User.email == clean_email)).first()
+        if existing_email:
+            em1_err = "⚠️ A user with this email address already exists."
+
+        if has_error:
+            err_cls = "small text-danger mt-1"
+            return (
+                True, False, dash.no_update, dash.no_update,
+                code_err, err_cls if code_err else "small",
+                un_err, err_cls if un_err else "small",
+                pw_err, err_cls if pw_err else "small",
+                pw2_err, err_cls if pw2_err else "small",
+                name_err, err_cls if name_err else "small",
+                em1_err, err_cls if em1_err else "small",
+                em2_err, err_cls if em2_err else "small"
+            )
+
+        # 5. Create New User & Mark Invite Code Used
+        new_user = User(
+            username=clean_username,
+            full_name=full_name.strip(),
+            role=invite.assigned_role or "user",
+            email=clean_email,
+        )
+        new_user.set_password(password)
+
+        invite.is_used = True
+
+        session.add(new_user)
+        session.commit()
+
+        # Success: Close signup modal, pre-fill username on login modal, clear all errors
+        return (
+            False, True, clean_username, "",
+            "", "small", "", "small", "", "small", "", "small",
+            "", "small", "", "small", "", "small"
+        )
+
+    except Exception as e:
+        session.rollback()
+        return (
+            True, False, dash.no_update, dash.no_update,
+            f"❌ Registration failed: {str(e)}", "small text-danger mt-1",
+            "", "small", "", "small", "", "small", "", "small", "", "small", "", "small"
+        )
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     app.run(debug=True, port=8050)
