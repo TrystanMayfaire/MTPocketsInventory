@@ -15,6 +15,7 @@ from constants import ERA_PERIOD_OPTIONS, CONDITION_OPTIONS, USER_LEVEL_OPTIONS
 
 app = dash.Dash(
     __name__,
+    requests_pathname_prefix='/inventory/',
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True
 )
